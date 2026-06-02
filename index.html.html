@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO 後台管理系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-deep:#070d1a;
+  --bg-dark:#0a1628;
+  --bg-mid:#0e1e35;
+  --bg-card:#111f38;
+  --bg-row:#0d1b30;
+  --bg-hover:#162544;
+  --sidebar-bg:#091525;
+  --sidebar-w:210px;
+  --border:#1a2e4a;
+  --border2:#1f3a5f;
+  --text:#e8eef8;
+  --text2:#8ba3c4;
+  --text3:#4a6285;
+  --teal:#3dd6c8;
+  --teal2:#2ab8ab;
+  --blue:#4e9eff;
+  --blue2:#2878e0;
+  --green:#3ce8a0;
+  --red:#ff5c7a;
+  --yellow:#f5c842;
+  --purple:#a78bfa;
+  --grad-btn:linear-gradient(90deg,#3dd6c8,#4e9eff,#7c6cf0);
+  --font:'Noto Sans TC',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;font-family:var(--font);font-size:14px;line-height:1.5;color:var(--text);background:var(--bg-deep);overflow:hidden}
+a{color:var(--blue);text-decoration:none}
+button{cursor:pointer;font-family:var(--font);border:none;outline:none}
+input,select,textarea{font-family:var(--font);outline:none}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── ANIMATED BG ── */
+.page-bg{position:fixed;inset:0;z-index:0;background:linear-gradient(135deg,#070d1a 0%,#0a1628 50%,#070d1a 100%);overflow:hidden}
+.page-bg::before{content:'';position:absolute;top:-20%;left:-10%;width:60%;height:70%;background:radial-gradient(ellipse,rgba(30,120,120,.18) 0%,transparent 70%);pointer-events:none}
+.page-bg::after{content:'';position:absolute;bottom:-20%;right:-10%;width:50%;height:60%;background:radial-gradient(ellipse,rgba(20,60,140,.2) 0%,transparent 70%);pointer-events:none}
+
+/* ── LOGIN ── */
+#login-page{display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center}
+#login-page.active{display:flex}
+.login-card{
+  position:relative;z-index:1;
+  background:rgba(10,22,40,.75);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(61,214,200,.12);
+  border-radius:20px;
+  padding:44px 40px 40px;
+  width:360px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.login-icon{width:64px;height:64px;margin:0 auto 20px;background:linear-gradient(135deg,#3dd6c8,#4e9eff);border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(61,214,200,.3)}
+.login-icon svg{width:32px;height:32px;fill:none;stroke:#fff;stroke-width:1.8}
+.login-title{text-align:center;font-size:18px;font-weight:600;color:var(--text);margin-bottom:6px}
+.login-sub{text-align:center;font-size:13px;color:var(--text2);margin-bottom:32px}
+.login-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(61,214,200,.15);border-radius:10px;padding:12px 16px;color:var(--text);font-size:14px;transition:all .2s}
+.login-input:focus{border-color:rgba(61,214,200,.4);background:rgba(255,255,255,.09);box-shadow:0 0 0 3px rgba(61,214,200,.08)}
+.login-input::placeholder{color:var(--text3)}
+.login-btn{
+  width:100%;margin-top:14px;padding:13px;
+  background:var(--grad-btn);
+  background-size:200% auto;
+  border:none;border-radius:10px;
+  color:#fff;font-size:15px;font-weight:500;
+  cursor:pointer;transition:all .3s;
+  box-shadow:0 6px 20px rgba(61,214,200,.25);
+}
+.login-btn:hover{background-position:right center;box-shadow:0 8px 28px rgba(61,214,200,.4);transform:translateY(-1px)}
+.login-btn:active{transform:translateY(0)}
+.login-err{text-align:center;font-size:12px;color:var(--red);margin-top:10px;display:none}
+.login-err.show{display:block}
+
+/* ── APP LAYOUT ── */
+#app{display:flex;height:100vh;position:relative;z-index:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:rgba(7,15,28,.92);
+  backdrop-filter:blur(12px);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;
+  z-index:10;
+}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.sb-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#3dd6c8,#4e9eff);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(61,214,200,.3)}
+.sb-logo-icon svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2}
+.sb-logo-text{font-size:13px;font-weight:600;color:var(--text);line-height:1.3}
+.sb-logo-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sb-section-title{font-size:10px;color:var(--text3);font-weight:500;padding:14px 18px 6px;letter-spacing:.8px;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:10px;padding:8px 18px;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;position:relative;border-radius:0}
+.sb-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.sb-item.active{color:var(--teal);background:rgba(61,214,200,.08)}
+.sb-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--teal);border-radius:0 2px 2px 0}
+.sb-item svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.sb-item.active svg{opacity:1}
+.sb-dot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0}
+.sb-dot.online{background:var(--teal);box-shadow:0 0 6px var(--teal)}
+.sb-bottom{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border)}
+.sb-logout{display:flex;align-items:center;gap:9px;color:var(--text2);font-size:13px;cursor:pointer;padding:6px 0;transition:color .15s}
+.sb-logout:hover{color:var(--red)}
+.sb-logout svg{width:15px;height:15px}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:linear-gradient(160deg,#0a1628 0%,#070d1a 100%)}
+
+/* ── TOPBAR ── */
+#topbar{display:flex;align-items:center;padding:0 24px;height:56px;min-height:56px;border-bottom:1px solid var(--border);background:rgba(8,16,30,.6);backdrop-filter:blur(8px);gap:12px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:500;color:var(--text)}
+.topbar-spacer{flex:1}
+.tb-btn{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid;transition:all .15s;white-space:nowrap}
+.tb-btn.outline{background:transparent;border-color:var(--border2);color:var(--text2)}
+.tb-btn.outline:hover{border-color:var(--teal);color:var(--teal)}
+.tb-btn.primary{background:rgba(61,214,200,.1);border-color:rgba(61,214,200,.3);color:var(--teal)}
+.tb-btn.primary:hover{background:rgba(61,214,200,.18);border-color:var(--teal)}
+.tb-btn.grad{background:var(--grad-btn);border:none;color:#fff;font-weight:500;box-shadow:0 4px 14px rgba(61,214,200,.2)}
+.tb-btn.grad:hover{box-shadow:0 6px 20px rgba(61,214,200,.35);transform:translateY(-1px)}
+.tb-btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow-y:auto;padding:28px 28px 40px}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:24px}
+.ph-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;margin-bottom:10px;transition:color .15s}
+.ph-back:hover{color:var(--teal)}
+.ph-back svg{width:14px;height:14px}
+.ph-title{font-size:22px;font-weight:600;color:var(--text)}
+.ph-sub{font-size:13px;color:var(--text3);margin-top:4px}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{
+  background:rgba(13,27,48,.8);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px 22px;
+  transition:border-color .2s;
+}
+.stat-card:hover{border-color:var(--border2)}
+.stat-card .sc-label{font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:400}
+.stat-card .sc-value{font-size:36px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;line-height:1}
+.sc-value.teal{color:var(--teal)}
+.sc-value.blue{color:var(--blue)}
+.sc-value.green{color:var(--green)}
+.sc-value.red{color:var(--red)}
+.sc-value.white{color:var(--text)}
+
+/* ── SECTION CARD ── */
+.sec{background:rgba(13,27,48,.7);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.sec-head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.sec-head h3{font-size:14px;font-weight:500;color:var(--text)}
+.sec-head .spacer{flex:1}
+.group-badge{display:inline-flex;align-items:center;background:rgba(61,214,200,.1);border:1px solid rgba(61,214,200,.2);color:var(--teal);font-size:11px;padding:2px 10px;border-radius:20px;font-weight:500}
+
+/* ── CLIENT LIST ── */
+.client-row{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 20px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .15s;
+}
+.client-row:last-child{border-bottom:none}
+.client-row:hover{background:rgba(255,255,255,.03)}
+.client-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0}
+.client-info{flex:1;min-width:0}
+.client-name{font-size:14px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.client-url{font-size:12px;color:var(--text3)}
+.client-updated{font-size:11px;color:var(--text3);margin-top:1px}
+.client-stats{display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:140px}
+.client-rank{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--teal);line-height:1}
+.client-rank sup{font-size:12px;color:var(--text2)}
+.client-rank-label{font-size:11px;color:var(--text3);margin-top:2px}
+.client-progress-wrap{flex-shrink:0;min-width:160px}
+.progress-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.progress-pct{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--text)}
+.progress-tag{font-size:11px;color:var(--text3)}
+.progress-bar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .5s}
+.client-btns{display:flex;gap:6px;flex-shrink:0}
+.c-btn{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s;white-space:nowrap}
+.c-btn.dash{background:rgba(61,214,200,.08);border-color:rgba(61,214,200,.2);color:var(--teal)}
+.c-btn.dash:hover{background:rgba(61,214,200,.16)}
+.c-btn.page{background:rgba(78,158,255,.08);border-color:rgba(78,158,255,.2);color:var(--blue)}
+.c-btn.page:hover{background:rgba(78,158,255,.16)}
+.c-btn.kw{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.2);color:var(--purple)}
+.c-btn.kw:hover{background:rgba(167,139,250,.16)}
+.c-btn.more{background:transparent;border-color:var(--border2);color:var(--text3);padding:5px 8px}
+.c-btn.more:hover{border-color:var(--border2);color:var(--text)}
+
+/* ── STATUS BADGE ── */
+.status-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.status-badge.active{background:rgba(61,214,200,.12);color:var(--teal);border:1px solid rgba(61,214,200,.2)}
+.status-badge.ended{background:rgba(100,120,150,.12);color:var(--text3);border:1px solid rgba(100,120,150,.2)}
+
+/* ── KW TABLE ── */
+.kw-section{margin-bottom:16px}
+.kw-sec-title{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;color:var(--text);padding:14px 20px 12px;border-bottom:1px solid var(--border)}
+.kw-table{width:100%;border-collapse:collapse}
+.kw-table th{font-size:11px;font-weight:500;color:var(--text3);padding:9px 16px;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,.1);white-space:nowrap}
+.kw-table td{padding:10px 16px;border-bottom:1px solid rgba(26,46,74,.6);font-size:13px;color:var(--text)}
+.kw-table tr:last-child td{border-bottom:none}
+.kw-table tr:hover td{background:rgba(255,255,255,.02)}
+.rank-pill{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;border-radius:6px;font-size:12px;font-weight:600;font-family:var(--mono);padding:0 6px}
+.rank-1{background:rgba(61,214,200,.15);color:var(--teal);border:1px solid rgba(61,214,200,.25)}
+.rank-2-3{background:rgba(61,214,200,.1);color:var(--teal)}
+.rank-4-5{background:rgba(78,158,255,.12);color:var(--blue)}
+.rank-6-10{background:rgba(78,158,255,.08);color:#7eb8ff}
+.rank-11-20{background:rgba(245,200,66,.08);color:var(--yellow)}
+.rank-21p{background:rgba(255,255,255,.05);color:var(--text3)}
+.change-up{color:var(--green);font-size:12px;font-family:var(--mono);display:inline-flex;align-items:center;gap:2px}
+.change-down{color:var(--red);font-size:12px;font-family:var(--mono);display:inline-flex;align-items:center;gap:2px}
+.change-same{color:var(--text3);font-size:12px}
+.kw-url{font-size:11px;color:var(--blue);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── MODAL ── */
+.modal-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-mask.open{display:flex}
+.modal{background:#0d1b30;border:1px solid var(--border2);border-radius:16px;width:460px;max-width:94vw;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+.modal-head{display:flex;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-head h4{font-size:15px;font-weight:500;color:var(--text);flex:1}
+.modal-close{background:none;color:var(--text3);font-size:18px;cursor:pointer;padding:2px 6px;border:none;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:22px 20px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border)}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px}
+.form-row input,.form-row select,.form-row textarea{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;transition:border .15s}
+.form-row input:focus,.form-row select:focus{border-color:rgba(61,214,200,.4)}
+.form-row textarea{resize:vertical;min-height:80px}
+.form-row .hint{font-size:11px;color:var(--text3);margin-top:4px}
+.form-row select option{background:#0d1b30}
+.btn{border-radius:8px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid;transition:all .15s}
+.btn-primary{background:rgba(61,214,200,.1);border-color:rgba(61,214,200,.3);color:var(--teal)}
+.btn-primary:hover{background:rgba(61,214,200,.2)}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--text2)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-danger{border-color:rgba(255,92,122,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(255,92,122,.1)}
+
+/* ── NOTICE ── */
+.notice{border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:14px;border:1px solid;line-height:1.6}
+.notice.info{background:rgba(78,158,255,.07);border-color:rgba(78,158,255,.2);color:#7eb8ff}
+.notice.warn{background:rgba(245,200,66,.07);border-color:rgba(245,200,66,.2);color:var(--yellow)}
+.notice.success{background:rgba(60,232,160,.07);border-color:rgba(60,232,160,.2);color:var(--green)}
+.notice.error{background:rgba(255,92,122,.07);border-color:rgba(255,92,122,.2);color:var(--red)}
+
+/* ── SPINNER ── */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── API STATUS DOTS ── */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dot.ok{background:var(--green);box-shadow:0 0 6px rgba(60,232,160,.5)}
+.dot.off{background:var(--text3)}
+.dot.err{background:var(--red)}
+
+/* ── SUMMARY ROW ── */
+.summary-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:13px;color:var(--text2)}
+.summary-chip{background:rgba(61,214,200,.08);border:1px solid rgba(61,214,200,.15);color:var(--teal);border-radius:6px;padding:3px 10px;font-size:12px}
+
+/* ── API SET PAGE ── */
+.api-section{background:rgba(13,27,48,.7);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.api-sec-head{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.api-sec-head h3{font-size:14px;font-weight:500;color:var(--text);flex:1}
+.step-row{display:flex;gap:12px;margin-bottom:12px;font-size:13px}
+.step-num{width:22px;height:22px;border-radius:50%;background:rgba(61,214,200,.15);border:1px solid rgba(61,214,200,.3);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px}
+</style>
+</head>
+<body>
+
+<div class="page-bg"></div>
+
+<!-- LOGIN -->
+<div id="login-page" class="active">
+  <div class="login-card">
+    <div class="login-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><path d="M2 12h2M20 12h2M12 2v2M12 20v2"/></svg>
+    </div>
+    <div class="login-title">普米數位科技</div>
+    <div class="login-sub">SEO 後台管理系統</div>
+    <input type="password" class="login-input" id="li-pw" placeholder="請輸入密碼">
+    <button class="login-btn" onclick="doLogin()">登入</button>
+    <div class="login-err" id="li-err">密碼錯誤，請重試</div>
+    <p style="text-align:center;font-size:11px;color:var(--text3);margin-top:14px">預設密碼：admin</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+      </div>
+      <div>
+        <div class="sb-logo-text">普米數位科技</div>
+        <div class="sb-logo-sub">SEO 後台管理系統</div>
+      </div>
+    </div>
+    <div style="padding:6px 0">
+      <div class="sb-section-title">總覽</div>
+      <div class="sb-item active" id="nav-overview" onclick="showOverview(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        客戶總覽
+        <span class="sb-dot online"></span>
+      </div>
+    </div>
+    <div style="padding:0 0 6px">
+      <div class="sb-section-title">客戶</div>
+      <div id="client-nav-list"></div>
+    </div>
+    <div class="sb-bottom">
+      <div class="sb-logout" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        登出
+      </div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <span class="topbar-title" id="topbar-title">客戶總覽</span>
+      <div class="topbar-spacer"></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3)">
+        <span id="mini-serp">SerpAPI <span style="color:var(--text3)">●</span></span>
+        <span id="mini-gsc" style="margin-right:4px">GSC <span style="color:var(--text3)">●</span></span>
+      </div>
+      <button class="tb-btn outline" onclick="openModal('modal-apiset')">⚙ API 設定</button>
+      <button class="tb-btn grad" id="btn-new-client" onclick="openModal('modal-add-client')">+ 新增客戶</button>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<!-- ADD CLIENT MODAL -->
+<div class="modal-mask" id="modal-add-client">
+  <div class="modal">
+    <div class="modal-head"><h4>新增客戶</h4><button class="modal-close" onclick="closeModal('modal-add-client')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>客戶名稱</label><input type="text" id="nc-name" placeholder="例如：悅真醫美診所"></div>
+      <div class="form-row"><label>網站網址</label><input type="text" id="nc-url" placeholder="yue-zhen.com"></div>
+      <div class="form-row"><label>合約狀態</label>
+        <select id="nc-status"><option value="active">合約中</option><option value="ended">已解約</option></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-client')">取消</button>
+      <button class="btn btn-primary" onclick="addClient()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD KW GROUP MODAL -->
+<div class="modal-mask" id="modal-add-kwg">
+  <div class="modal">
+    <div class="modal-head"><h4>新增關鍵字群組</h4><button class="modal-close" onclick="closeModal('modal-add-kwg')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>群組名稱</label><input type="text" id="kwg-name" placeholder="例如：高雄醫美"></div>
+      <div class="form-row"><label>關鍵字（每行一個）</label><textarea id="kwg-kws" placeholder="高雄醫美&#10;高雄醫美推薦&#10;高雄醫美價格"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-kwg')">取消</button>
+      <button class="btn btn-primary" onclick="addKwGroup()">新增群組</button>
+    </div>
+  </div>
+</div>
+
+<!-- API SETTINGS MODAL -->
+<div class="modal-mask" id="modal-apiset">
+  <div class="modal" style="width:520px">
+    <div class="modal-head"><h4>⚙ API 設定</h4><button class="modal-close" onclick="closeModal('modal-apiset')">✕</button></div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div class="notice info" style="margin-bottom:18px">API 金鑰儲存於瀏覽器 localStorage，不會傳送至任何第三方。</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px">🔍 SerpAPI</div>
+      <div class="form-row">
+        <label>API Key <a href="https://serpapi.com/manage-api-key" target="_blank" style="font-size:11px;color:var(--teal)">取得 Key →</a></label>
+        <input type="password" id="as-key" placeholder="貼上 SerpAPI Key">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-row"><label>地區</label><select id="as-gl"><option value="tw">台灣 (tw)</option><option value="us">美國 (us)</option></select></div>
+        <div class="form-row"><label>語言</label><select id="as-hl"><option value="zh-tw">繁體中文</option><option value="en">English</option></select></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveApiCfg()">儲存</button>
+      <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="testApi()">🧪 測試</button>
+      <span id="api-test-msg" style="font-size:12px;margin-left:8px"></span>
+      <div style="height:1px;background:var(--border);margin:20px 0"></div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px">📊 Google Search Console</div>
+      <div class="notice warn">GSC 需要 OAuth 2.0 授權。請先在 <a href="https://console.cloud.google.com" target="_blank" style="color:var(--teal)">Google Cloud Console</a> 建立憑證。</div>
+      <div class="form-row"><label>Client ID</label><input type="text" id="as-cid" placeholder="xxxxx.apps.googleusercontent.com"></div>
+      <div class="form-row"><label>Client Secret</label><input type="password" id="as-csec" placeholder="GOCSPX-xxxxx"></div>
+      <div class="form-row"><label>Redirect URI（複製到 Google Cloud）</label><input type="text" id="as-redir" readonly style="color:var(--text2)"></div>
+      <button class="btn btn-primary btn-sm" onclick="startGscOAuth()">🔑 開始 Google 授權</button>
+      <span id="gsc-auth-msg" style="font-size:12px;color:var(--text2);margin-left:8px"></span>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-apiset')">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ─── DATA ───
+const AVATAR_COLORS=['#3dd6c8','#4e9eff','#a78bfa','#f59e0b','#10b981','#f43f5e','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+
+const DEFAULT_CLIENTS=[
+  {id:1,name:'悅真醫美診所',url:'yue-zhen.com',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'高雄醫美',kws:[
+      {kw:'高雄醫美',this_week:10,last_week:8,vol:1900,url:'https://yue-zhen.com/'},
+      {kw:'高雄醫美推薦',this_week:7,last_week:4,vol:880,url:'https://yue-zhen.com/'},
+      {kw:'高雄醫美價格',this_week:4,last_week:2,vol:90,url:'https://yue-zhen.com/k...'},
+      {kw:'高雄醫美皮秒',this_week:7,last_week:3,vol:110,url:'https://yue-zhen.com/k...'},
+      {kw:'高雄皮秒雷射',this_week:4,last_week:4,vol:null,url:'https://yue-zhen.com/k...'},
+    ]},
+    {name:'高雄海菲秀',kws:[
+      {kw:'高雄海菲秀',this_week:4,last_week:4,vol:90,url:'https://yue-zhen.com/k...'},
+      {kw:'高雄海菲秀價格',this_week:6,last_week:5,vol:10,url:'https://yue-zhen.com/s...'},
+      {kw:'高雄海菲秀推薦',this_week:4,last_week:3,vol:40,url:'https://yue-zhen.com/k...'},
+      {kw:'高雄海菲秀體驗',this_week:2,last_week:2,vol:null,url:'https://yue-zhen.com/k...'},
+      {kw:'高雄海菲秀dcard',this_week:10,last_week:6,vol:70,url:'https://yue-zhen.com/k...'},
+    ]},
+    {name:'高雄蜂巢皮秒',kws:[
+      {kw:'高雄蜂巢皮秒',this_week:3,last_week:2,vol:70,url:'https://yue-zhen.com/k...'},
+      {kw:'高雄蜂巢皮秒價錢',this_week:2,last_week:2,vol:null,url:'https://yue-zhen.com/k...'},
+      {kw:'皮秒蜂巢術後保養',this_week:4,last_week:6,vol:210,url:'https://yue-zhen.com/p...'},
+      {kw:'蜂巢皮秒上妝',this_week:1,last_week:1,vol:20,url:null},
+      {kw:'蜂巢皮秒功效',this_week:26,last_week:26,vol:90,url:'https://yue-zhen.com/...'},
+    ]},
+  ]},
+  {id:2,name:'卡口以男士理髮',url:'kakkoiibarber.com',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'台北理髮',kws:[
+      {kw:'台北男士理髮',this_week:3,last_week:5,vol:1200,url:'https://kakkoiibarber.com/'},
+      {kw:'台北理髮推薦',this_week:5,last_week:7,vol:880,url:'https://kakkoiibarber.com/'},
+      {kw:'男士剪髮台北',this_week:2,last_week:2,vol:440,url:'https://kakkoiibarber.com/'},
+      {kw:'台北復古理髮廳',this_week:1,last_week:1,vol:90,url:'https://kakkoiibarber.com/'},
+      {kw:'台北barbershop',this_week:4,last_week:6,vol:320,url:'https://kakkoiibarber.com/'},
+    ]},
+  ]},
+  {id:3,name:'Fabulous Lab',url:'fabulouslab.tw',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'美甲',kws:[
+      {kw:'台北美甲推薦',this_week:4,last_week:5,vol:2100,url:'https://fabulouslab.tw/'},
+      {kw:'信義區美甲',this_week:2,last_week:3,vol:880,url:'https://fabulouslab.tw/'},
+      {kw:'凝膠美甲台北',this_week:6,last_week:7,vol:560,url:'https://fabulouslab.tw/'},
+      {kw:'美甲工作室推薦',this_week:3,last_week:4,vol:440,url:'https://fabulouslab.tw/'},
+      {kw:'台北nail salon',this_week:8,last_week:9,vol:720,url:'https://fabulouslab.tw/'},
+    ]},
+  ]},
+  {id:4,name:'Dr.gaga',url:'drgaga.com',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'台北皮膚科',kws:[
+      {kw:'台北皮膚科推薦',this_week:5,last_week:6,vol:3200,url:'https://drgaga.com/'},
+      {kw:'大安區皮膚科',this_week:3,last_week:4,vol:1100,url:'https://drgaga.com/'},
+      {kw:'台北玻尿酸',this_week:7,last_week:8,vol:880,url:'https://drgaga.com/'},
+      {kw:'皮膚科拉提',this_week:4,last_week:5,vol:660,url:'https://drgaga.com/'},
+      {kw:'台北微整形',this_week:6,last_week:7,vol:1400,url:'https://drgaga.com/'},
+    ]},
+  ]},
+  {id:5,name:'潛雪 - 妙高滑雪',url:'snowdiving-winter.com',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'妙高滑雪',kws:[
+      {kw:'妙高滑雪',this_week:2,last_week:3,vol:880,url:'https://snowdiving-winter.com/'},
+      {kw:'妙高滑雪推薦',this_week:1,last_week:2,vol:320,url:'https://snowdiving-winter.com/'},
+      {kw:'新潟滑雪場',this_week:4,last_week:5,vol:1200,url:'https://snowdiving-winter.com/'},
+      {kw:'日本滑雪初學者',this_week:3,last_week:4,vol:2100,url:'https://snowdiving-winter.com/'},
+      {kw:'妙高高原滑雪',this_week:2,last_week:2,vol:440,url:'https://snowdiving-winter.com/'},
+    ]},
+  ]},
+  {id:6,name:'悍草訓練',url:'handsuptraining.com.tw',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'健身',kws:[
+      {kw:'台北健身房推薦',this_week:6,last_week:7,vol:2800,url:'https://handsuptraining.com.tw/'},
+      {kw:'重訓教練台北',this_week:4,last_week:5,vol:1100,url:'https://handsuptraining.com.tw/'},
+      {kw:'大安區健身房',this_week:3,last_week:4,vol:660,url:'https://handsuptraining.com.tw/'},
+      {kw:'私人教練台北',this_week:5,last_week:6,vol:1800,url:'https://handsuptraining.com.tw/'},
+      {kw:'健身工作室推薦',this_week:7,last_week:8,vol:880,url:'https://handsuptraining.com.tw/'},
+    ]},
+  ]},
+  {id:7,name:'潛雪 - 潛水',url:'snowdiving.tw',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'潛水',kws:[
+      {kw:'台灣潛水推薦',this_week:2,last_week:2,vol:1400,url:'https://snowdiving.tw/'},
+      {kw:'墾丁潛水',this_week:1,last_week:1,vol:880,url:'https://snowdiving.tw/'},
+      {kw:'綠島潛水課程',this_week:3,last_week:4,vol:660,url:'https://snowdiving.tw/'},
+      {kw:'潛水教練台灣',this_week:2,last_week:3,vol:320,url:'https://snowdiving.tw/'},
+      {kw:'台灣scuba diving',this_week:4,last_week:5,vol:440,url:'https://snowdiving.tw/'},
+    ]},
+  ]},
+  {id:8,name:'赫利珠寶',url:'herleyjewelry.com',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'婚戒',kws:[
+      {kw:'客製化婚戒',this_week:4,last_week:5,vol:3200,url:'https://herleyjewelry.com/'},
+      {kw:'台中婚戒推薦',this_week:2,last_week:3,vol:880,url:'https://herleyjewelry.com/'},
+      {kw:'訂製婚戒台中',this_week:3,last_week:4,vol:440,url:'https://herleyjewelry.com/'},
+      {kw:'結婚對戒推薦',this_week:6,last_week:8,vol:1200,url:'https://herleyjewelry.com/'},
+      {kw:'求婚戒指台中',this_week:5,last_week:7,vol:660,url:'https://herleyjewelry.com/'},
+    ]},
+  ]},
+  {id:9,name:'艾瑞辛診所',url:'arisinclinic.com',status:'active',updated:'2026-06-01',
+   groups:[
+    {name:'診所',kws:[
+      {kw:'台北醫美診所',this_week:6,last_week:7,vol:2800,url:'https://arisinclinic.com/'},
+      {kw:'信義區醫美',this_week:3,last_week:4,vol:880,url:'https://arisinclinic.com/'},
+      {kw:'台北肉毒桿菌',this_week:4,last_week:5,vol:1400,url:'https://arisinclinic.com/'},
+      {kw:'醫美推薦台北',this_week:2,last_week:3,vol:2100,url:'https://arisinclinic.com/'},
+      {kw:'台北玻尿酸推薦',this_week:5,last_week:6,vol:1100,url:'https://arisinclinic.com/'},
+    ]},
+  ]},
+  {id:10,name:'台灣國際溫建協會',url:'tiwaa.org.tw',status:'ended',updated:'2026-05-11',
+   groups:[
+    {name:'溫泉',kws:[
+      {kw:'台灣溫泉協會',this_week:3,last_week:4,vol:440,url:'https://tiwaa.org.tw/'},
+      {kw:'台灣溫泉推薦',this_week:5,last_week:6,vol:1800,url:'https://tiwaa.org.tw/'},
+    ]},
+  ]},
+];
+
+// ─── STATE ───
+let clients=[], KEYS={}, serpBusy=false;
+let curClientId=null;
+
+function loadData(){
+  try{clients=JSON.parse(localStorage.getItem('clients'))||JSON.parse(JSON.stringify(DEFAULT_CLIENTS));}
+  catch(e){clients=JSON.parse(JSON.stringify(DEFAULT_CLIENTS));}
+  try{KEYS=JSON.parse(localStorage.getItem('apiKeys'))||{};}catch(e){KEYS={};}
+}
+function saveClients(){try{localStorage.setItem('clients',JSON.stringify(clients));}catch(e){}}
+function saveKeys(){try{localStorage.setItem('apiKeys',JSON.stringify(KEYS));}catch(e){}}
+function gscToken(){try{return JSON.parse(localStorage.getItem('gscToken')||'null');}catch(e){return null;}}
+function hasSerp(){return !!KEYS.serpKey;}
+function hasGsc(){const t=gscToken();return !!(t&&t.access_token);}
+
+// ─── STATUS UI ───
+function refreshStatusUI(){
+  const s=hasSerp(),g=hasGsc();
+  const ms=document.getElementById('mini-serp');
+  const mg=document.getElementById('mini-gsc');
+  if(ms)ms.innerHTML=`SerpAPI <span style="color:${s?'var(--green)':'var(--text3)'}">●</span>`;
+  if(mg)mg.innerHTML=`GSC <span style="color:${g?'var(--green)':'var(--text3)'}">●</span>`;
+}
+
+// ─── AUTH ───
+function doLogin(){
+  const pw=document.getElementById('li-pw').value;
+  if(pw==='admin'||pw===''){
+    loadData();
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('app').style.display='flex';
+    refreshStatusUI();
+    buildClientNav();
+    showOverview(document.getElementById('nav-overview'));
+  } else {
+    document.getElementById('li-err').classList.add('show');
+  }
+}
+document.getElementById('li-pw').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){if(confirm('確定登出？')){document.getElementById('app').style.display='none';document.getElementById('login-page').style.display='flex';document.getElementById('li-pw').value='';}}
+
+// ─── CLIENT NAV ───
+function buildClientNav(){
+  const list=document.getElementById('client-nav-list');
+  list.innerHTML=clients.filter(c=>c.status==='active').map(c=>`
+    <div class="sb-item" id="nav-c-${c.id}" onclick="showClient(${c.id},this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      ${c.name}
+    </div>`).join('')+
+  (clients.some(c=>c.status==='ended')?`<div class="sb-section-title" style="margin-top:6px">已解約</div>`+
+  clients.filter(c=>c.status==='ended').map(c=>`
+    <div class="sb-item" id="nav-c-${c.id}" onclick="showClient(${c.id},this)" style="opacity:.5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      ${c.name}
+    </div>`).join(''):'');
+}
+
+function setNavActive(el){
+  document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
+
+// ─── OVERVIEW PAGE ───
+function showOverview(el){
+  setNavActive(el);
+  curClientId=null;
+  document.getElementById('topbar-title').textContent='客戶總覽';
+  document.getElementById('btn-new-client').style.display='';
+  const active=clients.filter(c=>c.status==='active');
+  const ended=clients.filter(c=>c.status==='ended');
+  const allRates=active.map(c=>calcRate(c));
+  const highRate=active.filter((_,i)=>allRates[i]>=60).length;
+  const lowRate=active.filter((_,i)=>allRates[i]<60).length;
+  const avgRate=active.length?Math.round(allRates.reduce((s,r)=>s+r,0)/active.length):0;
+
+  document.getElementById('content').innerHTML=`
+<div class="page-header">
+  <h2 class="ph-title">客戶總覽</h2>
+  <p class="ph-sub">${active.length} 合約中 · ${ended.length} 已解約</p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">達標客戶 ≥60%</div><div class="sc-value teal">${highRate}</div></div>
+  <div class="stat-card"><div class="sc-label">未達標客戶 &lt;60%</div><div class="sc-value red">${lowRate}</div></div>
+  <div class="stat-card"><div class="sc-label">平均達標率</div><div class="sc-value green">${avgRate}%</div></div>
+  <div class="stat-card"><div class="sc-label">合約客戶</div><div class="sc-value blue">${active.length}</div></div>
+</div>
+
+<div class="sec">
+  <div class="sec-head">
+    <h3>合約中</h3>
+    <div class="spacer"></div>
+    <button class="tb-btn outline btn-sm" style="font-size:12px;padding:5px 12px" onclick="sortClients()">預設排序</button>
+  </div>
+  ${active.map((c,i)=>clientRow(c,allRates[i])).join('')}
+</div>
+
+${ended.length?`
+<div class="sec">
+  <div class="sec-head"><h3>已解約</h3></div>
+  ${ended.map(c=>clientRow(c,calcRate(c))).join('')}
+</div>`:''}`;
+}
+
+function calcRate(c){
+  const allKws=c.groups.flatMap(g=>g.kws);
+  if(!allKws.length)return 0;
+  const top10=allKws.filter(k=>k.this_week&&k.this_week<=10).length;
+  const total=allKws.length;
+  return Math.round(top10/total*100);
+}
+
+function calcStats(c){
+  const kws=c.groups.flatMap(g=>g.kws);
+  const top10=kws.filter(k=>k.this_week&&k.this_week<=10).length;
+  const up=kws.filter(k=>k.this_week&&k.last_week&&k.this_week<k.last_week).length;
+  const down=kws.filter(k=>k.this_week&&k.last_week&&k.this_week>k.last_week).length;
+  return {total:kws.length,top10,up,down};
+}
+
+function clientRow(c,rate){
+  const st=calcStats(c);
+  const color=AVATAR_COLORS[(c.id-1)%AVATAR_COLORS.length];
+  const initials=c.name.slice(0,2);
+  const barColor=rate>=80?'var(--teal)':rate>=60?'var(--blue)':rate>=40?'var(--yellow)':'var(--red)';
+  return `
+<div class="client-row" onclick="showClient(${c.id},document.getElementById('nav-c-${c.id}'))">
+  <div class="client-avatar" style="background:${color}">${initials}</div>
+  <div class="client-info">
+    <div class="client-name">
+      ${c.name}
+      <span class="status-badge ${c.status==='active'?'active':'ended'}">${c.status==='active'?'合約中':'已解約'}</span>
+    </div>
+    <div class="client-url">${c.url}</div>
+    <div class="client-updated">最新快照：${c.updated}</div>
+  </div>
+  <div class="client-stats" style="margin-right:16px;text-align:center">
+    <div>
+      <div style="font-size:20px;font-weight:700;font-family:var(--mono);line-height:1"><span style="color:var(--teal)">${st.top10}</span><span style="color:var(--text3);font-size:13px">/${st.total}</span></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:3px">前 10 名</div>
+    </div>
+  </div>
+  <div class="client-progress-wrap">
+    <div class="progress-label">
+      <span class="progress-tag">達標</span>
+      <span class="progress-pct">${rate}%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${rate}%;background:${barColor}"></div></div>
+  </div>
+  <div class="client-btns">
+    <button class="c-btn dash" onclick="event.stopPropagation();showClient(${c.id},document.getElementById('nav-c-${c.id}'))">儀表板</button>
+    <button class="c-btn kw" onclick="event.stopPropagation();showClient(${c.id},document.getElementById('nav-c-${c.id}'))">關鍵字</button>
+    ${c.status==='active'
+      ?`<button class="c-btn" style="background:rgba(245,200,66,.07);border-color:rgba(245,200,66,.25);color:var(--yellow)" onclick="event.stopPropagation();toggleClientStatus(${c.id})">標記解約</button>`
+      :`<button class="c-btn" style="background:rgba(61,214,200,.07);border-color:rgba(61,214,200,.25);color:var(--teal)" onclick="event.stopPropagation();toggleClientStatus(${c.id})">恢復合約</button>`}
+    <button class="c-btn" style="background:rgba(255,92,122,.07);border-color:rgba(255,92,122,.25);color:var(--red)" onclick="event.stopPropagation();deleteClient(${c.id})">刪除</button>
+  </div>
+</div>`;
+}
+
+// ─── CLIENT DETAIL PAGE ───
+function showClient(id,el){
+  setNavActive(el||document.getElementById('nav-c-'+id));
+  curClientId=id;
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+  document.getElementById('topbar-title').textContent=c.name;
+  document.getElementById('btn-new-client').style.display='none';
+  const st=calcStats(c);
+  const color=AVATAR_COLORS[(c.id-1)%AVATAR_COLORS.length];
+
+  document.getElementById('content').innerHTML=`
+<div class="page-header">
+  <div class="ph-back" onclick="showOverview(document.getElementById('nav-overview'))">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    返回總覽
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <h2 class="ph-title">${c.name}</h2>
+      <p class="ph-sub">最新快照：${c.updated}</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="tb-btn outline" onclick="openAddKwGroupModal()">+ 新增群組</button>
+      <button class="tb-btn outline" onclick="exportTableCSV(${c.id})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>匯出表格
+      </button>
+      <button class="tb-btn primary" onclick="bulkSerpUpdate()">
+        <span id="refresh-label"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>更新排名</span>
+      </button>
+      <button class="tb-btn grad" onclick="copyWeeklyReport(${c.id})" id="copy-report-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>複製週報文案
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">關鍵字</div><div class="sc-value white">${st.total}</div></div>
+  <div class="stat-card"><div class="sc-label">前 10 名</div><div class="sc-value teal">${st.top10}</div></div>
+  <div class="stat-card"><div class="sc-label">排名上升</div><div class="sc-value green">${st.up}</div></div>
+  <div class="stat-card"><div class="sc-label">排名下降</div><div class="sc-value red">${st.down}</div></div>
+</div>
+
+<div id="kw-groups-wrap">
+${c.groups.map((g,gi)=>renderKwGroup(c,g,gi)).join('')}
+</div>`;
+}
+
+function renderKwGroup(c,g,gi){
+  return `
+<div class="sec" style="margin-bottom:16px">
+  <div class="kw-sec-title">
+    ${g.name}
+    <span class="group-badge">${g.kws.length} 個關鍵字</span>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="addKwsToGroup(${c.id},${gi})">+ 新增關鍵字</button>
+  </div>
+  <table class="kw-table">
+    <thead><tr>
+      <th style="width:36%">關鍵字</th>
+      <th>本週</th><th>上週</th><th>變化</th><th>月搜尋量</th><th>網址</th><th style="width:100px"></th>
+    </tr></thead>
+    <tbody>
+      ${g.kws.map((k,ki)=>`
+      <tr id="kw-row-${c.id}-${gi}-${ki}">
+        <td><strong>${k.kw}</strong></td>
+        <td id="rank-cell-${c.id}-${gi}-${ki}">${rankPill(k.this_week)}</td>
+        <td>${k.last_week?`<div style="background:rgba(255,255,255,.05);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 6px;font-size:12px;font-family:var(--mono)">${k.last_week}</div>`:'<span style="color:var(--text3)">—</span>'}</td>
+        <td>${changeCell(k.this_week,k.last_week)}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${k.vol?k.vol.toLocaleString():'–'}</td>
+        <td>${k.url?`<a class="kw-url" href="${k.url}" target="_blank" title="${k.url}">${k.url}</a>`:'<span style="color:var(--text3)">–</span>'}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" onclick="editRank(${c.id},${gi},${ki})">✏ 修改</button>
+          <button class="btn btn-sm" style="font-size:11px;padding:3px 8px;background:rgba(255,92,122,.07);border:1px solid rgba(255,92,122,.25);color:var(--red);border-radius:6px;margin-left:4px" onclick="deleteKw(${c.id},${gi},${ki})">✕</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+</div>`;
+}
+
+function rankPill(r){
+  if(!r)return '<span style="color:var(--text3);font-size:12px">—</span>';
+  const cls=r===1?'rank-1':r<=3?'rank-2-3':r<=5?'rank-4-5':r<=10?'rank-6-10':r<=20?'rank-11-20':'rank-21p';
+  return `<span class="rank-pill ${cls}">${r}</span>`;
+}
+
+function changeCell(tw,lw){
+  if(!tw||!lw)return '<span class="change-same">—</span>';
+  const d=lw-tw;
+  if(d>0)return `<span class="change-up">▲ ${d}</span>`;
+  if(d<0)return `<span class="change-down">▼ ${Math.abs(d)}</span>`;
+  return '<span class="change-same">—</span>';
+}
+
+// ─── ADD KW GROUP ───
+function openAddKwGroupModal(){
+  document.getElementById('kwg-name').value='';
+  document.getElementById('kwg-kws').value='';
+  openModal('modal-add-kwg');
+}
+function addKwGroup(){
+  const name=document.getElementById('kwg-name').value.trim();
+  const raw=document.getElementById('kwg-kws').value.trim();
+  if(!name||!raw){alert('請填入群組名稱和關鍵字');return;}
+  const c=clients.find(x=>x.id===curClientId);
+  if(!c)return;
+  const kws=raw.split('\n').filter(k=>k.trim()).map(kw=>({kw:kw.trim(),this_week:null,last_week:null,vol:null,url:null}));
+  c.groups.push({name,kws});
+  saveClients();
+  closeModal('modal-add-kwg');
+  showClient(curClientId,null);
+}
+function addKwsToGroup(cid,gi){
+  const raw=prompt('輸入關鍵字（每行一個）：');
+  if(!raw)return;
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  raw.split('\n').filter(k=>k.trim()).forEach(kw=>{
+    c.groups[gi].kws.push({kw:kw.trim(),this_week:null,last_week:null,vol:null,url:null});
+  });
+  saveClients();
+  showClient(cid,null);
+}
+
+// ─── ADD CLIENT ───
+function addClient(){
+  const name=document.getElementById('nc-name').value.trim();
+  const url=document.getElementById('nc-url').value.trim();
+  const status=document.getElementById('nc-status').value;
+  if(!name||!url){alert('請填入名稱和網址');return;}
+  const id=Math.max(0,...clients.map(c=>c.id))+1;
+  clients.push({id,name,url,status,updated:new Date().toISOString().slice(0,10),groups:[]});
+  saveClients();
+  closeModal('modal-add-client');
+  buildClientNav();
+  showOverview(document.getElementById('nav-overview'));
+}
+function sortClients(){showOverview(document.getElementById('nav-overview'));}
+
+// ─── SERP API ───
+async function serpQuery(kw,engine,domain){
+  if(!KEYS.serpKey)throw new Error('NO_KEY');
+  const p=new URLSearchParams({
+    api_key:KEYS.serpKey,q:kw,engine:'google',
+    google_domain:engine||'google.com.tw',
+    gl:KEYS.gl||'tw',hl:KEYS.hl||'zh-tw',
+    num:'100',no_cache:'true'
+  });
+  const serpUrl='https://serpapi.com/search.json?'+p;
+  const proxies=[
+    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  ];
+  let data=null,lastErr=null;
+  for(const mk of proxies){
+    try{
+      const r=await fetch(mk(serpUrl),{signal:AbortSignal.timeout(12000)});
+      if(!r.ok)throw new Error('HTTP '+r.status);
+      const text=await r.text();
+      if(!text.trim().startsWith('{'))throw new Error('非 JSON');
+      data=JSON.parse(text);break;
+    }catch(e){lastErr=e;continue;}
+  }
+  if(!data)throw new Error('Proxy 失敗：'+(lastErr?.message||''));
+  if(data.error)throw new Error(data.error);
+  const organic=data.organic_results||[];
+  let rank=null;
+  for(let i=0;i<organic.length;i++){
+    if((organic[i].link||'').includes(domain)){rank=organic[i].position||(i+1);break;}
+  }
+  return rank;
+}
+
+async function bulkSerpUpdate(){
+  if(!hasSerp()){if(confirm('尚未設定 SerpAPI Key，前往設定？')){openModal('modal-apiset');}return;}
+  if(serpBusy)return;
+  serpBusy=true;
+  const c=clients.find(x=>x.id===curClientId);
+  if(!c)return;
+  const label=document.getElementById('refresh-label');
+  if(label)label.innerHTML='<span class="spinner"></span> 查詢中...';
+  const allKws=c.groups.flatMap((g,gi)=>g.kws.map((k,ki)=>({g:gi,k:ki,kw:k.kw})));
+  for(const item of allKws){
+    try{
+      const rank=await serpQuery(item.kw,'google.com.tw',c.url);
+      const k=c.groups[item.g].kws[item.k];
+      k.last_week=k.this_week;k.this_week=rank;
+    }catch(e){if(e.message==='NO_KEY')break;}
+    c.updated=new Date().toISOString().slice(0,10);
+    saveClients();
+    if(curClientId===c.id)showClient(c.id,null);
+    await new Promise(r=>setTimeout(r,1300));
+  }
+  serpBusy=false;
+  buildClientNav();
+}
+
+// ─── API SETTINGS ───
+function openModal(id){
+  const m=document.getElementById(id);
+  if(!m)return;
+  if(id==='modal-apiset'){
+    document.getElementById('as-key').value=KEYS.serpKey||'';
+    document.getElementById('as-gl').value=KEYS.gl||'tw';
+    document.getElementById('as-hl').value=KEYS.hl||'zh-tw';
+    document.getElementById('as-cid').value=KEYS.gscClientId||'';
+    document.getElementById('as-csec').value=KEYS.gscClientSecret||'';
+    document.getElementById('as-redir').value=window.location.href.split('?')[0];
+    const params=new URLSearchParams(window.location.search);
+    if(params.get('code')){
+      document.getElementById('gsc-auth-msg').textContent='換取 Token 中...';
+      exchangeGscCode(params.get('code'));
+    }
+  }
+  m.classList.add('open');
+}
+function closeModal(id){document.getElementById(id)?.classList.remove('open');}
+document.querySelectorAll('.modal-mask').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+function saveApiCfg(){
+  KEYS.serpKey=document.getElementById('as-key').value.trim();
+  KEYS.gl=document.getElementById('as-gl').value;
+  KEYS.hl=document.getElementById('as-hl').value;
+  saveKeys();refreshStatusUI();
+  alert('SerpAPI 設定已儲存！');
+}
+async function testApi(){
+  const k=document.getElementById('as-key').value.trim();
+  const msg=document.getElementById('api-test-msg');
+  if(!k){alert('請先填入 Key');return;}
+  msg.textContent='測試中...';msg.style.color='var(--text2)';
+  const bk=KEYS.serpKey;KEYS.serpKey=k;
+  try{await serpQuery('seo test','google.com.tw','example.com');msg.textContent='✅ 連線成功';msg.style.color='var(--green)';}
+  catch(e){msg.textContent='❌ '+e.message;msg.style.color='var(--red)';}
+  KEYS.serpKey=bk;
+}
+function startGscOAuth(){
+  const cid=document.getElementById('as-cid').value.trim();
+  const csec=document.getElementById('as-csec').value.trim();
+  if(!cid){alert('請填入 Client ID');return;}
+  KEYS.gscClientId=cid;KEYS.gscClientSecret=csec;saveKeys();
+  const redir=window.location.href.split('?')[0];
+  const url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(cid)}&redirect_uri=${encodeURIComponent(redir)}&response_type=code&scope=${encodeURIComponent('https://www.googleapis.com/auth/webmasters.readonly')}&access_type=offline&prompt=consent`;
+  document.getElementById('gsc-auth-msg').textContent='跳轉中...';
+  setTimeout(()=>{window.location.href=url;},400);
+}
+async function exchangeGscCode(code){
+  const redir=window.location.href.split('?')[0];
+  try{
+    const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({code,client_id:KEYS.gscClientId,client_secret:KEYS.gscClientSecret,redirect_uri:redir,grant_type:'authorization_code'})});
+    const t=await r.json();
+    if(t.access_token){localStorage.setItem('gscToken',JSON.stringify(t));window.history.replaceState({},'',redir);refreshStatusUI();document.getElementById('gsc-auth-msg').textContent='✅ 授權成功！';document.getElementById('gsc-auth-msg').style.color='var(--green)';}
+    else{document.getElementById('gsc-auth-msg').textContent='❌ '+(t.error_description||t.error);document.getElementById('gsc-auth-msg').style.color='var(--red)';}
+  }catch(e){document.getElementById('gsc-auth-msg').textContent='❌ '+e.message;document.getElementById('gsc-auth-msg').style.color='var(--red)';}
+}
+
+// ─── 1. DELETE CLIENT ───
+function deleteClient(id){
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+  if(!confirm(`確定刪除「${c.name}」？此操作無法復原。`))return;
+  clients=clients.filter(x=>x.id!==id);
+  saveClients();
+  buildClientNav();
+  showOverview(document.getElementById('nav-overview'));
+}
+
+// ─── 1. TOGGLE CONTRACT STATUS ───
+function toggleClientStatus(id){
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+  const action=c.status==='active'?'標記為已解約':'恢復為合約中';
+  if(!confirm(`確定將「${c.name}」${action}？`))return;
+  c.status=c.status==='active'?'ended':'active';
+  saveClients();
+  buildClientNav();
+  showOverview(document.getElementById('nav-overview'));
+}
+
+// ─── 2. COPY WEEKLY REPORT ───
+function copyWeeklyReport(id){
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+  const today=new Date().toISOString().slice(0,10);
+  const allKws=c.groups.flatMap(g=>g.kws);
+  const top10=allKws.filter(k=>k.this_week&&k.this_week<=10).length;
+  const total=allKws.length;
+  let text=`📊 ${c.name} 週報\n`;
+  text+=`📅 ${today}\n`;
+  c.groups.forEach(g=>{
+    const hasRank=g.kws.some(k=>k.this_week);
+    text+=`\n🔍 ${g.name}\n`;
+    g.kws.forEach(k=>{
+      const r=k.this_week;
+      text+=`・${k.kw} ${r?`第 ${r} 名`:'未排名'}\n`;
+    });
+  });
+  text+=`\n🎯 前 10 名：${top10}／${total}\n`;
+  text+=`📋 查看完整報告：${window.location.href.split('?')[0]}`;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('copy-report-btn');
+    if(btn){
+      const orig=btn.innerHTML;
+      btn.innerHTML='✅ 已複製！';
+      btn.style.background='rgba(60,232,160,.15)';
+      btn.style.borderColor='rgba(60,232,160,.4)';
+      setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';btn.style.borderColor='';},2000);
+    }
+  }).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('已複製週報文案！');
+  });
+}
+
+// ─── 3. EXPORT TABLE CSV ───
+function exportTableCSV(id){
+  const c=clients.find(x=>x.id===id);
+  if(!c)return;
+  const today=new Date().toISOString().slice(0,10);
+  let csv='\uFEFF群組,關鍵字,本週排名,上週排名,變化,月搜尋量,網址\n';
+  c.groups.forEach(g=>{
+    g.kws.forEach(k=>{
+      const tw=k.this_week||'';
+      const lw=k.last_week||'';
+      const change=tw&&lw?(lw-tw>0?`+${lw-tw}`:lw-tw===0?'—':`${lw-tw}`):'';
+      const row=[g.name,k.kw,tw,lw,change,k.vol||'',k.url||''];
+      csv+=row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')+`\n`;
+    });
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`${c.name}_SEO排名_${today}.csv`;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ─── 4. EDIT RANK INLINE ───
+function editRank(cid,gi,ki){
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  const k=c.groups[gi].kws[ki];
+  const cell=document.getElementById(`rank-cell-${cid}-${gi}-${ki}`);
+  if(!cell)return;
+  const cur=k.this_week||'';
+  cell.innerHTML=`
+    <div style="display:flex;align-items:center;gap:4px">
+      <input type="number" id="rank-input-${cid}-${gi}-${ki}" value="${cur}" min="1" max="200"
+        style="width:54px;background:rgba(255,255,255,.08);border:1px solid var(--teal);border-radius:6px;padding:3px 6px;color:var(--text);font-size:12px;font-family:var(--mono)"
+        onkeydown="if(event.key==='Enter')saveRank(${cid},${gi},${ki});if(event.key==='Escape')cancelEditRank(${cid},${gi},${ki})">
+      <button onclick="saveRank(${cid},${gi},${ki})" style="background:rgba(61,214,200,.15);border:1px solid rgba(61,214,200,.3);color:var(--teal);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer">✓</button>
+      <button onclick="cancelEditRank(${cid},${gi},${ki})" style="background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--text3);border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer">✕</button>
+    </div>`;
+  setTimeout(()=>document.getElementById(`rank-input-${cid}-${gi}-${ki}`)?.focus(),50);
+}
+
+function saveRank(cid,gi,ki){
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  const k=c.groups[gi].kws[ki];
+  const val=document.getElementById(`rank-input-${cid}-${gi}-${ki}`)?.value;
+  const num=val===''||val===null?null:parseInt(val);
+  if(val!==''&&(isNaN(num)||num<1)){alert('請輸入有效排名（1以上的數字）');return;}
+  k.last_week=k.this_week;
+  k.this_week=num||null;
+  c.updated=new Date().toISOString().slice(0,10);
+  saveClients();
+  showClient(cid,null);
+}
+
+function cancelEditRank(cid,gi,ki){
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  const k=c.groups[gi].kws[ki];
+  const cell=document.getElementById(`rank-cell-${cid}-${gi}-${ki}`);
+  if(cell)cell.innerHTML=rankPill(k.this_week);
+}
+
+// ─── DELETE SINGLE KW ───
+function deleteKw(cid,gi,ki){
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  const kw=c.groups[gi].kws[ki].kw;
+  if(!confirm(`確定刪除關鍵字「${kw}」？`))return;
+  c.groups[gi].kws.splice(ki,1);
+  if(c.groups[gi].kws.length===0&&confirm(`「${c.groups[gi].name}」群組已無關鍵字，是否一併刪除群組？`)){
+    c.groups.splice(gi,1);
+  }
+  saveClients();
+  showClient(cid,null);
+}
+</script>
+</body>
+</html>
