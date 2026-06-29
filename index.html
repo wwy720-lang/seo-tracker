@@ -605,6 +605,11 @@ function showOverview(el){
   const highRate=active.filter((_,i)=>allRates[i]>=60).length;
   const lowRate=active.filter((_,i)=>allRates[i]<60).length;
   const avgRate=active.length?Math.round(allRates.reduce((s,r)=>s+r,0)/active.length):0;
+  const allStats=active.map(c=>calcStats(c));
+  const aioTotal=allStats.reduce((s,x)=>s+x.aioTriggered,0);
+  const citedTotal=allStats.reduce((s,x)=>s+x.cited,0);
+  const mentionedTotal=allStats.reduce((s,x)=>s+x.mentioned,0);
+  const avgCiteRate=aioTotal?Math.round(citedTotal/aioTotal*100):0;
 
   document.getElementById('content').innerHTML=`
 <div class="page-header">
@@ -617,6 +622,12 @@ function showOverview(el){
   <div class="stat-card"><div class="sc-label">未達標客戶 &lt;60%</div><div class="sc-value red">${lowRate}</div></div>
   <div class="stat-card"><div class="sc-label">平均達標率</div><div class="sc-value green">${avgRate}%</div></div>
   <div class="stat-card"><div class="sc-label">合約客戶</div><div class="sc-value blue">${active.length}</div></div>
+</div>
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">AIO 觸發（總計）</div><div class="sc-value white">${aioTotal}</div></div>
+  <div class="stat-card"><div class="sc-label">被引用（總計）</div><div class="sc-value" style="color:var(--purple)">${citedTotal}</div></div>
+  <div class="stat-card"><div class="sc-label">被提及（總計）</div><div class="sc-value" style="color:var(--yellow)">${mentionedTotal}</div></div>
+  <div class="stat-card"><div class="sc-label">平均引用率</div><div class="sc-value green">${avgCiteRate}%</div></div>
 </div>
 
 <div class="sec">
@@ -648,7 +659,11 @@ function calcStats(c){
   const top10=kws.filter(k=>k.this_week&&k.this_week<=10).length;
   const up=kws.filter(k=>k.this_week&&k.last_week&&k.this_week<k.last_week).length;
   const down=kws.filter(k=>k.this_week&&k.last_week&&k.this_week>k.last_week).length;
-  return {total:kws.length,top10,up,down};
+  const aioTriggered=kws.filter(k=>k.aio).length;
+  const cited=kws.filter(k=>k.cited).length;
+  const mentioned=kws.filter(k=>k.mentioned).length;
+  const citeRate=aioTriggered?Math.round(cited/aioTriggered*100):0;
+  return {total:kws.length,top10,up,down,aioTriggered,cited,mentioned,citeRate};
 }
 
 function clientRow(c,rate){
@@ -734,10 +749,55 @@ function showClient(id,el){
   <div class="stat-card"><div class="sc-label">排名上升</div><div class="sc-value green">${st.up}</div></div>
   <div class="stat-card"><div class="sc-label">排名下降</div><div class="sc-value red">${st.down}</div></div>
 </div>
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">AI OVERVIEW 觸發</div><div class="sc-value white">${st.aioTriggered}</div></div>
+  <div class="stat-card"><div class="sc-label">被引用</div><div class="sc-value" style="color:var(--purple)">${st.cited}</div></div>
+  <div class="stat-card"><div class="sc-label">被提及</div><div class="sc-value" style="color:var(--yellow)">${st.mentioned}</div></div>
+  <div class="stat-card"><div class="sc-label">引用率</div><div class="sc-value green">${st.citeRate}%</div><div style="font-size:11px;color:var(--text3);margin-top:4px">${st.cited} / ${st.aioTriggered} 個 AIO</div></div>
+</div>
+
+<div class="sec" style="padding:20px">
+  <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:14px">AI Overview 走勢</div>
+  <div style="position:relative;height:260px"><canvas id="aio-chart"></canvas></div>
+</div>
 
 <div id="kw-groups-wrap">
 ${c.groups.map((g,gi)=>renderKwGroup(c,g,gi)).join('')}
 </div>`;
+  renderAioChart(c);
+}
+
+// ─── AIO TREND CHART ───
+let aioChartInst=null;
+function renderAioChart(c){
+  const canvas=document.getElementById('aio-chart');
+  if(!canvas)return;
+  const hist=(c.aioHistory||[]).slice(-30);
+  if(aioChartInst){aioChartInst.destroy();aioChartInst=null;}
+  if(!hist.length){
+    canvas.parentElement.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px">尚無歷史資料，點擊「更新排名」後將開始累積走勢</div>';
+    return;
+  }
+  const labels=hist.map(h=>h.date.slice(5));
+  aioChartInst=new Chart(canvas.getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'引用率',data:hist.map(h=>h.citeRate),borderColor:'#3ce8a0',borderDash:[4,3],yAxisID:'y1',tension:.3,pointRadius:2},
+      {label:'被引用',data:hist.map(h=>h.cited),borderColor:'#a78bfa',yAxisID:'y',tension:.3,pointRadius:2},
+      {label:'被提及',data:hist.map(h=>h.mentioned),borderColor:'#f5c842',yAxisID:'y',tension:.3,pointRadius:2},
+      {label:'觸發 AIO',data:hist.map(h=>h.triggered),borderColor:'#8ba3c4',yAxisID:'y',tension:.3,pointRadius:2},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'bottom',labels:{color:'#8ba3c4',font:{size:11}}}},
+      scales:{
+        y:{position:'left',ticks:{color:'#4a6285'},grid:{color:'rgba(26,46,74,.5)'}},
+        y1:{position:'right',min:0,max:100,ticks:{color:'#4a6285',callback:v=>v+'%'},grid:{display:false}},
+        x:{ticks:{color:'#4a6285'},grid:{display:false}}
+      }
+    }
+  });
 }
 
 function renderKwGroup(c,g,gi){
@@ -757,7 +817,7 @@ function renderKwGroup(c,g,gi){
     <tbody>
       ${g.kws.map((k,ki)=>`
       <tr id="kw-row-${c.id}-${gi}-${ki}">
-        <td><strong>${k.kw}</strong></td>
+        <td><strong>${k.kw}</strong> ${aioBadge(k)}</td>
         <td id="rank-cell-${c.id}-${gi}-${ki}">${rankPill(k.this_week)}</td>
         <td>${k.last_week?`<div style="background:rgba(255,255,255,.05);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 6px;font-size:12px;font-family:var(--mono)">${k.last_week}</div>`:'<span style="color:var(--text3)">—</span>'}</td>
         <td>${changeCell(k.this_week,k.last_week)}</td>
@@ -771,6 +831,13 @@ function renderKwGroup(c,g,gi){
     </tbody>
   </table>
 </div>`;
+}
+
+function aioBadge(k){
+  if(k.cited)return '<span class="group-badge" style="background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.2);color:var(--purple)">引用</span>';
+  if(k.mentioned)return '<span class="group-badge" style="background:rgba(245,200,66,.1);border-color:rgba(245,200,66,.2);color:var(--yellow)">提及</span>';
+  if(k.aio)return '<span class="group-badge">AIO</span>';
+  return '';
 }
 
 function rankPill(r){
@@ -833,38 +900,70 @@ function addClient(){
 function sortClients(){showOverview(document.getElementById('nav-overview'));}
 
 // ─── SERP API ───
-async function serpQuery(kw,engine,domain){
-  if(!KEYS.serpKey)throw new Error('NO_KEY');
-  const p=new URLSearchParams({
-    api_key:KEYS.serpKey,q:kw,engine:'google',
-    google_domain:engine||'google.com.tw',
-    gl:KEYS.gl||'tw',hl:KEYS.hl||'zh-tw',
-    num:'100',no_cache:'true'
-  });
-  const serpUrl='https://serpapi.com/search.json?'+p;
-  const proxies=[
-    u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
-    u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  ];
-  let data=null,lastErr=null;
-  for(const mk of proxies){
+const PROXIES=[
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+async function fetchViaProxy(url){
+  let lastErr=null;
+  for(const mk of PROXIES){
     try{
-      const r=await fetch(mk(serpUrl),{signal:AbortSignal.timeout(12000)});
+      const r=await fetch(mk(url),{signal:AbortSignal.timeout(12000)});
       if(!r.ok)throw new Error('HTTP '+r.status);
       const text=await r.text();
       if(!text.trim().startsWith('{'))throw new Error('非 JSON');
-      data=JSON.parse(text);break;
+      return JSON.parse(text);
     }catch(e){lastErr=e;continue;}
   }
-  if(!data)throw new Error('Proxy 失敗：'+(lastErr?.message||''));
+  throw new Error('Proxy 失敗：'+(lastErr?.message||''));
+}
+
+async function serpQuery(kw,domain,brand){
+  if(!KEYS.serpKey)throw new Error('NO_KEY');
+  const p=new URLSearchParams({
+    api_key:KEYS.serpKey,q:kw,engine:'google',
+    google_domain:'google.com.tw',
+    gl:KEYS.gl||'tw',hl:KEYS.hl||'zh-tw',
+    num:'100',no_cache:'true'
+  });
+  const data=await fetchViaProxy('https://serpapi.com/search.json?'+p);
   if(data.error)throw new Error(data.error);
   const organic=data.organic_results||[];
   let rank=null;
   for(let i=0;i<organic.length;i++){
     if((organic[i].link||'').includes(domain)){rank=organic[i].position||(i+1);break;}
   }
-  return rank;
+  const aio=await extractAioInfo(data,domain,brand);
+  return {rank,aio};
+}
+
+// fetches/derives {triggered,cited,mentioned} from a google search response's ai_overview field
+async function extractAioInfo(data,domain,brand){
+  let block=data.ai_overview;
+  if(!block)return{triggered:false,cited:false,mentioned:false};
+  if(block.page_token&&!block.text_blocks){
+    try{
+      const p=new URLSearchParams({api_key:KEYS.serpKey,engine:'google_ai_overview',page_token:block.page_token});
+      block=await fetchViaProxy('https://serpapi.com/search.json?'+p);
+    }catch(e){return{triggered:true,cited:false,mentioned:false};}
+  }
+  const refs=block.references||block.text_blocks?.flatMap(b=>b.references||[])||[];
+  const cited=refs.some(r=>(r.link||r.source||'').includes(domain));
+  let textAll='';
+  (function walk(node){
+    if(!node)return;
+    if(typeof node==='string'){textAll+=node+' ';return;}
+    if(Array.isArray(node)){node.forEach(walk);return;}
+    if(typeof node==='object'){
+      if(node.snippet)textAll+=node.snippet+' ';
+      if(node.text)textAll+=node.text+' ';
+      Object.values(node).forEach(walk);
+    }
+  })(block.text_blocks||block);
+  const brandKw=(brand||domain.split('.')[0]).toLowerCase();
+  const mentioned=!cited&&(textAll.toLowerCase().includes(brandKw)||textAll.includes(domain));
+  return{triggered:true,cited,mentioned};
 }
 
 async function bulkSerpUpdate(){
@@ -878,17 +977,30 @@ async function bulkSerpUpdate(){
   const allKws=c.groups.flatMap((g,gi)=>g.kws.map((k,ki)=>({g:gi,k:ki,kw:k.kw})));
   for(const item of allKws){
     try{
-      const rank=await serpQuery(item.kw,'google.com.tw',c.url);
+      const {rank,aio}=await serpQuery(item.kw,c.url,c.name);
       const k=c.groups[item.g].kws[item.k];
       k.last_week=k.this_week;k.this_week=rank;
+      k.aio=aio.triggered;k.cited=aio.cited;k.mentioned=aio.mentioned;
     }catch(e){if(e.message==='NO_KEY')break;}
     c.updated=new Date().toISOString().slice(0,10);
     saveClients();
     if(curClientId===c.id)showClient(c.id,null);
     await new Promise(r=>setTimeout(r,1300));
   }
+  pushAioSnapshot(c);
+  saveClients();
   serpBusy=false;
   buildClientNav();
+  if(curClientId===c.id)showClient(c.id,null);
+}
+
+function pushAioSnapshot(c){
+  const st=calcStats(c);
+  const today=new Date().toISOString().slice(0,10);
+  c.aioHistory=c.aioHistory||[];
+  const today_entry={date:today,triggered:st.aioTriggered,cited:st.cited,mentioned:st.mentioned,citeRate:st.citeRate};
+  const idx=c.aioHistory.findIndex(h=>h.date===today);
+  if(idx>=0)c.aioHistory[idx]=today_entry;else c.aioHistory.push(today_entry);
 }
 
 // ─── API SETTINGS ───
@@ -926,7 +1038,7 @@ async function testApi(){
   if(!k){alert('請先填入 Key');return;}
   msg.textContent='測試中...';msg.style.color='var(--text2)';
   const bk=KEYS.serpKey;KEYS.serpKey=k;
-  try{await serpQuery('seo test','google.com.tw','example.com');msg.textContent='✅ 連線成功';msg.style.color='var(--green)';}
+  try{await serpQuery('seo test','example.com','example');msg.textContent='✅ 連線成功';msg.style.color='var(--green)';}
   catch(e){msg.textContent='❌ '+e.message;msg.style.color='var(--red)';}
   KEYS.serpKey=bk;
 }
@@ -1017,13 +1129,13 @@ function exportTableCSV(id){
   const c=clients.find(x=>x.id===id);
   if(!c)return;
   const today=new Date().toISOString().slice(0,10);
-  let csv='\uFEFF群組,關鍵字,本週排名,上週排名,變化,月搜尋量,網址\n';
+  let csv='\uFEFF群組,關鍵字,本週排名,上週排名,變化,月搜尋量,網址,AIO觸發,被引用,被提及\n';
   c.groups.forEach(g=>{
     g.kws.forEach(k=>{
       const tw=k.this_week||'';
       const lw=k.last_week||'';
       const change=tw&&lw?(lw-tw>0?`+${lw-tw}`:lw-tw===0?'—':`${lw-tw}`):'';
-      const row=[g.name,k.kw,tw,lw,change,k.vol||'',k.url||''];
+      const row=[g.name,k.kw,tw,lw,change,k.vol||'',k.url||'',k.aio?'是':'否',k.cited?'是':'否',k.mentioned?'是':'否'];
       csv+=row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')+`\n`;
     });
   });
