@@ -337,13 +337,30 @@ input,select,textarea{font-family:var(--font);outline:none}
       <div class="topbar-spacer"></div>
       <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3)">
         <span id="mini-serp">SerpAPI <span style="color:var(--text3)">●</span></span>
-        <span id="mini-gsc" style="margin-right:4px">GSC <span style="color:var(--text3)">●</span></span>
+        <span id="mini-gsc">GSC <span style="color:var(--text3)">●</span></span>
+        <span id="mini-sheets" style="margin-right:4px">Sheets <span style="color:var(--text3)">●</span></span>
       </div>
       <button class="tb-btn outline" onclick="openModal('modal-apiset')">⚙ API 設定</button>
       <button class="tb-btn grad" id="btn-new-client" onclick="openModal('modal-add-client')">+ 新增客戶</button>
     </div>
     <div id="content"></div>
   </div>
+</div>
+
+<!-- CLIENT (READ-ONLY) VIEW -->
+<div id="client-view" style="display:none;height:100vh;overflow-y:auto;position:relative;z-index:1">
+  <div id="cv-topbar" style="display:flex;align-items:center;padding:0 24px;height:56px;min-height:56px;border-bottom:1px solid var(--border);background:rgba(8,16,30,.6);backdrop-filter:blur(8px);gap:12px">
+    <div class="sb-logo-icon" style="width:28px;height:28px">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <div>
+      <span class="topbar-title" id="cv-title">關鍵字排名查看</span>
+      <div style="font-size:11px;color:var(--text3)" id="cv-sub"></div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <button class="tb-btn outline" id="cv-refresh-btn" onclick="refreshClientViewData()">🔄 重新整理</button>
+  </div>
+  <div id="cv-content" style="padding:28px 28px 40px"></div>
 </div>
 
 <!-- ADD CLIENT MODAL -->
@@ -356,11 +373,61 @@ input,select,textarea{font-family:var(--font);outline:none}
       <div class="form-row"><label>合約狀態</label>
         <select id="nc-status"><option value="active">合約中</option><option value="ended">已解約</option></select>
       </div>
+      <div style="height:1px;background:var(--border);margin:16px 0"></div>
+      <div style="display:flex;align-items:center;margin-bottom:10px">
+        <label style="font-size:12px;color:var(--text2)">連結 Google Sheets（選填）</label>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addSheetRow('nc-sheets-list')">+ 新增試算表</button>
+      </div>
+      <div id="nc-sheets-list"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-client')">取消</button>
       <button class="btn btn-primary" onclick="addClient()">新增</button>
     </div>
+  </div>
+</div>
+
+<!-- MANAGE SHEETS MODAL -->
+<div class="modal-mask" id="modal-manage-sheets">
+  <div class="modal" style="width:520px">
+    <div class="modal-head"><h4>🔗 管理試算表</h4><button class="modal-close" onclick="closeModal('modal-manage-sheets')">✕</button></div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;margin-bottom:10px">
+        <div style="flex:1;font-size:12px;color:var(--text2)">連結的 Google Sheets</div>
+        <button class="btn btn-ghost btn-sm" onclick="addSheetRow('ms-sheets-list')">+ 新增試算表</button>
+      </div>
+      <div id="ms-sheets-list"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-manage-sheets')">取消</button>
+      <button class="btn btn-primary" onclick="saveManageSheets()">儲存並重新整理</button>
+    </div>
+  </div>
+</div>
+
+<!-- KEYWORD TREND CHART MODAL -->
+<div class="modal-mask" id="modal-kw-trend">
+  <div class="modal" style="width:560px">
+    <div class="modal-head"><h4 id="kwt-title">關鍵字排名走勢</h4><button class="modal-close" onclick="closeModal('modal-kw-trend')">✕</button></div>
+    <div class="modal-body">
+      <div style="position:relative;height:280px"><canvas id="kw-trend-chart"></canvas></div>
+      <div id="kwt-empty" style="display:none;color:var(--text3);font-size:13px;text-align:center;padding:30px 0">尚無歷史排名資料</div>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT SHARE LINK MODAL -->
+<div class="modal-mask" id="modal-client-link">
+  <div class="modal" style="width:520px">
+    <div class="modal-head"><h4>分享用唯讀連結</h4><button class="modal-close" onclick="closeModal('modal-client-link')">✕</button></div>
+    <div class="modal-body">
+      <div class="notice warn">此連結會將 Google Sheets API 金鑰內嵌於網址中，任何取得此連結的人都能讀取所連結的試算表。請至 Google Cloud Console 將 API 金鑰依「HTTP 參照網址」限制為本網站網域，並僅連結客戶同意公開的試算表。</div>
+      <div class="form-row"><label>唯讀連結（客戶免登入即可開啟）</label><input type="text" id="cl-link-out" readonly></div>
+      <button class="btn btn-primary btn-sm" onclick="copyClientLink()">📋 複製連結</button>
+      <span id="cl-copy-msg" style="font-size:12px;margin-left:8px;color:var(--green)"></span>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-client-link')">關閉</button></div>
   </div>
 </div>
 
@@ -405,6 +472,16 @@ input,select,textarea{font-family:var(--font);outline:none}
       <div class="form-row"><label>Redirect URI（複製到 Google Cloud）</label><input type="text" id="as-redir" readonly style="color:var(--text2)"></div>
       <button class="btn btn-primary btn-sm" onclick="startGscOAuth()">🔑 開始 Google 授權</button>
       <span id="gsc-auth-msg" style="font-size:12px;color:var(--text2);margin-left:8px"></span>
+      <div style="height:1px;background:var(--border);margin:20px 0"></div>
+      <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px">📄 Google Sheets API</div>
+      <div class="notice warn">此金鑰會內嵌在「客戶分享連結」中，建議至 <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--yellow);text-decoration:underline">Google Cloud Console</a> 用「HTTP Referrer」限制此金鑰只能從本網站網域使用，並只連結客戶同意公開（知道連結即可檢視）的試算表。</div>
+      <div class="form-row">
+        <label>API Key <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="font-size:11px;color:var(--teal)">取得 Key →</a></label>
+        <input type="password" id="as-sheets-key" placeholder="貼上 Google Sheets API Key">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveSheetsApiCfg()">儲存</button>
+      <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="testSheetsApi()">🧪 測試</button>
+      <span id="sheets-test-msg" style="font-size:12px;margin-left:8px"></span>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('modal-apiset')">關閉</button>
@@ -534,6 +611,7 @@ const DEFAULT_CLIENTS=[
 // ─── STATE ───
 let clients=[], KEYS={}, serpBusy=false;
 let curClientId=null;
+let ACTIVE_GROUPS=[]; // the groups array currently rendered on screen (admin client page or client-view page) — lets the trend-chart click handler work in both modes without threading the whole client object through inline onclick strings
 
 function loadData(){
   try{clients=JSON.parse(localStorage.getItem('clients'))||JSON.parse(JSON.stringify(DEFAULT_CLIENTS));}
@@ -545,14 +623,198 @@ function saveKeys(){try{localStorage.setItem('apiKeys',JSON.stringify(KEYS));}ca
 function gscToken(){try{return JSON.parse(localStorage.getItem('gscToken')||'null');}catch(e){return null;}}
 function hasSerp(){return !!KEYS.serpKey;}
 function hasGsc(){const t=gscToken();return !!(t&&t.access_token);}
+function hasSheets(){return !!KEYS.sheetsKey;}
 
 // ─── STATUS UI ───
 function refreshStatusUI(){
-  const s=hasSerp(),g=hasGsc();
+  const s=hasSerp(),g=hasGsc(),sh=hasSheets();
   const ms=document.getElementById('mini-serp');
   const mg=document.getElementById('mini-gsc');
+  const msh=document.getElementById('mini-sheets');
   if(ms)ms.innerHTML=`SerpAPI <span style="color:${s?'var(--green)':'var(--text3)'}">●</span>`;
   if(mg)mg.innerHTML=`GSC <span style="color:${g?'var(--green)':'var(--text3)'}">●</span>`;
+  if(msh)msh.innerHTML=`Sheets <span style="color:${sh?'var(--green)':'var(--text3)'}">●</span>`;
+}
+
+// ─── GOOGLE SHEETS ───
+function extractSheetId(url){
+  if(!url)return null;
+  const m=url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  if(m)return m[1];
+  const bare=url.trim();
+  return /^[a-zA-Z0-9-_]{20,}$/.test(bare)?bare:null;
+}
+
+async function sheetsApiCall(url){
+  const r=await fetch(url);
+  let data=null;
+  try{data=await r.json();}catch(e){}
+  if(!r.ok){
+    const status=data&&data.error&&data.error.status;
+    if(r.status===403&&status==='PERMISSION_DENIED')throw new Error('試算表未公開，請設為「知道連結的人皆可檢視」');
+    if(r.status===429)throw new Error('已達 Google Sheets API 額度上限，請稍後再試');
+    if(r.status===400||r.status===403)throw new Error('API 金鑰無效或未啟用 Google Sheets API');
+    if(r.status===404)throw new Error('找不到試算表，請確認網址或分頁名稱');
+    throw new Error((data&&data.error&&data.error.message)||('HTTP '+r.status));
+  }
+  return data;
+}
+
+async function fetchSheetFirstTabName(sheetId,apiKey){
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${encodeURIComponent(apiKey)}&fields=sheets.properties.title`;
+  const data=await sheetsApiCall(url);
+  return (data.sheets&&data.sheets[0]&&data.sheets[0].properties&&data.sheets[0].properties.title)||null;
+}
+
+async function fetchSheetValues(sheetId,apiKey,tabName){
+  if(!apiKey)throw new Error('NO_SHEETS_KEY');
+  let tab=tabName;
+  if(!tab)tab=await fetchSheetFirstTabName(sheetId,apiKey);
+  const range=tab?`${tab}!A1:ZZ2000`:'A1:ZZ2000';
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${encodeURIComponent(apiKey)}&majorDimension=ROWS`;
+  const data=await sheetsApiCall(url);
+  return data.values||[];
+}
+
+// strict numeric only — rejects "-", "N/A", "100+" etc so they don't pollute rank/history
+function parseRankCell(raw){
+  if(raw===undefined||raw===null)return null;
+  const s=String(raw).trim();
+  if(!/^\d+$/.test(s))return null;
+  const n=parseInt(s,10);
+  return n>0?n:null;
+}
+
+function parseSheetToGroup(label,values){
+  if(!values||values.length<1)return{name:label,kws:[]};
+  const header=values[0]||[];
+  const dates=header.slice(1);
+  const kws=values.slice(1)
+    .filter(row=>row&&row[0]&&String(row[0]).trim())
+    .map(row=>{
+      const kw=String(row[0]).trim();
+      const history=[];
+      for(let i=0;i<dates.length;i++){
+        const rank=parseRankCell(row[i+1]);
+        if(rank!=null){
+          const d=(dates[i]&&String(dates[i]).trim())||`第${i+1}期`;
+          history.push({date:d,rank});
+        }
+      }
+      const this_week=history.length?history[history.length-1].rank:null;
+      const last_week=history.length>1?history[history.length-2].rank:null;
+      return{kw,this_week,last_week,vol:null,url:null,history};
+    });
+  return{name:label,kws};
+}
+
+// sequential (not parallel) to stay gentle on Sheets API rate limits
+async function refreshClientSheets(client,apiKey){
+  if(!client.sheets||!client.sheets.length)return;
+  if(!apiKey)throw new Error('NO_SHEETS_KEY');
+  const manualGroups=(client.groups||[]).filter(g=>!g.sourceSheetId);
+  const sheetGroups=[];
+  for(const s of client.sheets){
+    try{
+      const values=await fetchSheetValues(s.id,apiKey,s.tabName);
+      const g=parseSheetToGroup(s.label,values);
+      g.sourceSheetId=s.id;
+      sheetGroups.push(g);
+    }catch(e){
+      sheetGroups.push({name:s.label,kws:[],sourceSheetId:s.id,fetchError:e.message});
+    }
+  }
+  client.groups=[...sheetGroups,...manualGroups];
+  client.updated=new Date().toISOString().slice(0,10);
+}
+
+// ─── SHEET LINK UI (dynamic rows, shared by add-client + manage-sheets modals) ───
+let draftSheets=[]; // modal-add-client (new, not-yet-created client)
+let manageSheetsClientId=null;
+let manageSheetsDraft=[]; // modal-manage-sheets (existing client)
+
+function sheetRowsArray(containerId){
+  return containerId==='nc-sheets-list'?draftSheets:manageSheetsDraft;
+}
+function escAttr(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');}
+
+function renderSheetRows(containerId){
+  const arr=sheetRowsArray(containerId);
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return;
+  if(!arr.length){wrap.innerHTML='<div style="font-size:12px;color:var(--text3);padding:6px 0 2px">尚未連結試算表</div>';return;}
+  wrap.innerHTML=arr.map((s,idx)=>`
+    <div style="border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <input type="text" placeholder="Google 試算表網址" value="${escAttr(s.url)}" oninput="updateSheetRow('${containerId}',${idx},'url',this.value)" style="flex:2;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px">
+        <input type="text" placeholder="標籤（例如：主要關鍵字）" value="${escAttr(s.label)}" oninput="updateSheetRow('${containerId}',${idx},'label',this.value)" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:6px;padding:6px 8px;color:var(--text);font-size:12px">
+        <button onclick="removeSheetRow('${containerId}',${idx})" style="background:rgba(255,92,122,.07);border:1px solid rgba(255,92,122,.25);color:var(--red);border-radius:6px;padding:0 10px;font-size:12px;cursor:pointer">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" placeholder="分頁名稱（選填，留空=第一個分頁）" value="${escAttr(s.tabName)}" oninput="updateSheetRow('${containerId}',${idx},'tabName',this.value)" style="flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px">
+        <button class="btn btn-ghost btn-sm" onclick="testSheetRow('${containerId}',${idx})">測試連線</button>
+      </div>
+      <div id="${containerId}-msg-${idx}" style="font-size:11px;margin-top:4px"></div>
+    </div>`).join('');
+}
+
+function updateSheetRow(containerId,idx,field,value){
+  const arr=sheetRowsArray(containerId);
+  if(!arr[idx])return;
+  arr[idx][field]=value;
+}
+function addSheetRow(containerId){
+  sheetRowsArray(containerId).push({url:'',label:'',tabName:''});
+  renderSheetRows(containerId);
+}
+function removeSheetRow(containerId,idx){
+  sheetRowsArray(containerId).splice(idx,1);
+  renderSheetRows(containerId);
+}
+
+async function testSheetRow(containerId,idx){
+  const arr=sheetRowsArray(containerId);
+  const row=arr[idx];
+  const msg=document.getElementById(`${containerId}-msg-${idx}`);
+  if(!row)return;
+  const sheetId=extractSheetId(row.url);
+  if(!sheetId){if(msg){msg.textContent='❌ 無法辨識試算表網址';msg.style.color='var(--red)';}return;}
+  if(!KEYS.sheetsKey){if(confirm('尚未設定 Google Sheets API Key，前往設定？'))openModal('modal-apiset');return;}
+  if(msg){msg.textContent='測試中...';msg.style.color='var(--text2)';}
+  try{
+    const values=await fetchSheetValues(sheetId,KEYS.sheetsKey,row.tabName||undefined);
+    const g=parseSheetToGroup(row.label||'試算表',values);
+    if(msg){msg.textContent=`✅ 連線成功，讀到 ${g.kws.length} 個關鍵字`;msg.style.color='var(--green)';}
+  }catch(e){
+    if(msg){msg.textContent='❌ '+e.message;msg.style.color='var(--red)';}
+  }
+}
+
+function buildSheetsPayload(arr){
+  return arr.filter(s=>s.url&&s.url.trim()).map(s=>({
+    id:extractSheetId(s.url),
+    url:s.url.trim(),
+    label:(s.label||'').trim()||'試算表',
+    tabName:(s.tabName||'').trim()||null,
+  })).filter(s=>s.id);
+}
+
+function openManageSheetsModal(cid){
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  manageSheetsClientId=cid;
+  manageSheetsDraft=JSON.parse(JSON.stringify(c.sheets||[]));
+  renderSheetRows('ms-sheets-list');
+  openModal('modal-manage-sheets');
+}
+
+async function saveManageSheets(){
+  const c=clients.find(x=>x.id===manageSheetsClientId);
+  if(!c)return;
+  c.sheets=buildSheetsPayload(manageSheetsDraft);
+  saveClients();
+  closeModal('modal-manage-sheets');
+  await refreshClientSheetsManual(c.id);
 }
 
 // ─── AUTH ───
@@ -707,15 +969,33 @@ function clientRow(c,rate){
 }
 
 // ─── CLIENT DETAIL PAGE ───
-function showClient(id,el){
+async function showClient(id,el){
   setNavActive(el||document.getElementById('nav-c-'+id));
   curClientId=id;
   const c=clients.find(x=>x.id===id);
   if(!c)return;
+  renderClientPage(c);
+  if(c.sheets&&c.sheets.length){
+    const wrap=document.getElementById('kw-groups-wrap');
+    if(wrap)wrap.insertAdjacentHTML('afterbegin','<div style="display:flex;align-items:center;gap:8px;color:var(--text3);font-size:13px;padding:10px 4px"><span class="spinner"></span> 讀取 Google 試算表中...</div>');
+    let err=null;
+    try{await refreshClientSheets(c,KEYS.sheetsKey);saveClients();}
+    catch(e){err=e.message==='NO_SHEETS_KEY'?'尚未設定 Google Sheets API Key（請至右上角「API 設定」新增）':e.message;}
+    buildClientNav();
+    if(curClientId!==c.id)return;
+    renderClientPage(c);
+    if(err){
+      const w=document.getElementById('kw-groups-wrap');
+      if(w)w.insertAdjacentHTML('afterbegin',`<div class="notice error">Google Sheets 讀取失敗：${err}</div>`);
+    }
+  }
+}
+
+function renderClientPage(c){
   document.getElementById('topbar-title').textContent=c.name;
   document.getElementById('btn-new-client').style.display='none';
   const st=calcStats(c);
-  const color=AVATAR_COLORS[(c.id-1)%AVATAR_COLORS.length];
+  ACTIVE_GROUPS=c.groups;
 
   document.getElementById('content').innerHTML=`
 <div class="page-header">
@@ -730,6 +1010,9 @@ function showClient(id,el){
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="tb-btn outline" onclick="openAddKwGroupModal()">+ 新增群組</button>
+      <button class="tb-btn outline" onclick="openManageSheetsModal(${c.id})">🔗 管理試算表</button>
+      <button class="tb-btn outline" onclick="openClientLinkModal(${c.id})">🔗 分享連結</button>
+      ${c.sheets&&c.sheets.length?`<button class="tb-btn primary" onclick="refreshClientSheetsManual(${c.id})"><span id="sheets-refresh-label">🔄 重新整理試算表</span></button>`:''}
       <button class="tb-btn outline" onclick="exportTableCSV(${c.id})">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>匯出表格
       </button>
@@ -762,9 +1045,24 @@ function showClient(id,el){
 </div>
 
 <div id="kw-groups-wrap">
-${c.groups.map((g,gi)=>renderKwGroup(c,g,gi)).join('')}
+${c.groups.map((g,gi)=>renderKwGroup(c,g,gi,false)).join('')}
 </div>`;
   renderAioChart(c);
+}
+
+async function refreshClientSheetsManual(cid){
+  const c=clients.find(x=>x.id===cid);
+  if(!c||!c.sheets||!c.sheets.length)return;
+  const label=document.getElementById('sheets-refresh-label');
+  if(label)label.innerHTML='<span class="spinner"></span> 讀取中...';
+  try{
+    await refreshClientSheets(c,KEYS.sheetsKey);
+    saveClients();
+  }catch(e){
+    alert('讀取失敗：'+(e.message==='NO_SHEETS_KEY'?'尚未設定 Google Sheets API Key':e.message));
+  }
+  buildClientNav();
+  if(curClientId===c.id)renderClientPage(c);
 }
 
 // ─── AIO TREND CHART ───
@@ -800,33 +1098,75 @@ function renderAioChart(c){
   });
 }
 
-function renderKwGroup(c,g,gi){
+// ─── KEYWORD TREND CHART ───
+let kwTrendChartInst=null;
+function openKwTrendModal(gi,ki){
+  const g=ACTIVE_GROUPS[gi];
+  const k=g&&g.kws[ki];
+  if(!k)return;
+  document.getElementById('kwt-title').textContent=`${k.kw} 排名走勢`;
+  const canvas=document.getElementById('kw-trend-chart');
+  const empty=document.getElementById('kwt-empty');
+  const hist=(k.history||[]).slice(-30);
+  if(kwTrendChartInst){kwTrendChartInst.destroy();kwTrendChartInst=null;}
+  if(hist.length<2){
+    canvas.style.display='none';
+    empty.style.display='block';
+  }else{
+    canvas.style.display='';
+    empty.style.display='none';
+    const ranks=hist.map(h=>h.rank);
+    kwTrendChartInst=new Chart(canvas.getContext('2d'),{
+      type:'line',
+      data:{labels:hist.map(h=>h.date),datasets:[
+        {label:'排名',data:ranks,borderColor:'#3dd6c8',backgroundColor:'rgba(61,214,200,.1)',fill:true,tension:.3,pointRadius:3,pointBackgroundColor:'#3dd6c8'},
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false}},
+        scales:{
+          y:{reverse:true,min:1,ticks:{color:'#4a6285',stepSize:1},grid:{color:'rgba(26,46,74,.5)'}},
+          x:{ticks:{color:'#4a6285'},grid:{display:false}}
+        }
+      }
+    });
+  }
+  openModal('modal-kw-trend');
+}
+
+function renderKwGroup(c,g,gi,readonly=false){
+  const isSheet=!!g.sourceSheetId;
+  const hideEdit=readonly||isSheet;
   return `
 <div class="sec" style="margin-bottom:16px">
   <div class="kw-sec-title">
     ${g.name}
     <span class="group-badge">${g.kws.length} 個關鍵字</span>
+    ${isSheet?`<span class="group-badge" style="background:rgba(78,158,255,.1);border-color:rgba(78,158,255,.2);color:var(--blue)">來自 Google Sheets</span>`:''}
     <div style="flex:1"></div>
-    <button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="addKwsToGroup(${c.id},${gi})">+ 新增關鍵字</button>
+    ${isSheet?`<a href="https://docs.google.com/spreadsheets/d/${g.sourceSheetId}/edit" target="_blank" class="btn btn-ghost btn-sm" style="font-size:11px;text-decoration:none">在 Google Sheets 開啟 ↗</a>`
+      :(readonly?'':`<button class="btn btn-ghost btn-sm" style="font-size:11px" onclick="addKwsToGroup(${c.id},${gi})">+ 新增關鍵字</button>`)}
   </div>
+  ${g.fetchError?`<div class="notice error" style="margin:14px 20px 0">讀取失敗：${g.fetchError}</div>`:''}
   <table class="kw-table">
     <thead><tr>
       <th style="width:36%">關鍵字</th>
-      <th>本週</th><th>上週</th><th>變化</th><th>月搜尋量</th><th>網址</th><th style="width:100px"></th>
+      <th>本期</th><th>上期</th><th>變化</th><th>月搜尋量</th><th>網址</th>${hideEdit?'':'<th style="width:100px"></th>'}
     </tr></thead>
     <tbody>
       ${g.kws.map((k,ki)=>`
       <tr id="kw-row-${c.id}-${gi}-${ki}">
         <td><strong>${k.kw}</strong> ${aioBadge(k)}</td>
-        <td id="rank-cell-${c.id}-${gi}-${ki}">${rankPill(k.this_week)}</td>
+        <td id="rank-cell-${c.id}-${gi}-${ki}" style="cursor:pointer" onclick="openKwTrendModal(${gi},${ki})" title="點擊查看排名走勢">${rankPill(k.this_week)}</td>
         <td>${k.last_week?`<div style="background:rgba(255,255,255,.05);border-radius:5px;display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:22px;padding:0 6px;font-size:12px;font-family:var(--mono)">${k.last_week}</div>`:'<span style="color:var(--text3)">—</span>'}</td>
         <td>${changeCell(k.this_week,k.last_week)}</td>
         <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${k.vol?k.vol.toLocaleString():'–'}</td>
         <td>${k.url?`<a class="kw-url" href="${k.url}" target="_blank" title="${k.url}">${k.url}</a>`:'<span style="color:var(--text3)">–</span>'}</td>
-        <td style="white-space:nowrap">
+        ${hideEdit?'':`<td style="white-space:nowrap">
           <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px" onclick="editRank(${c.id},${gi},${ki})">✏ 修改</button>
           <button class="btn btn-sm" style="font-size:11px;padding:3px 8px;background:rgba(255,92,122,.07);border:1px solid rgba(255,92,122,.25);color:var(--red);border-radius:6px;margin-left:4px" onclick="deleteKw(${c.id},${gi},${ki})">✕</button>
-        </td>
+        </td>`}
       </tr>`).join('')}
     </tbody>
   </table>
@@ -891,11 +1231,15 @@ function addClient(){
   const status=document.getElementById('nc-status').value;
   if(!name||!url){alert('請填入名稱和網址');return;}
   const id=Math.max(0,...clients.map(c=>c.id))+1;
-  clients.push({id,name,url,status,updated:new Date().toISOString().slice(0,10),groups:[]});
+  const sheets=buildSheetsPayload(draftSheets);
+  const newClient={id,name,url,status,updated:new Date().toISOString().slice(0,10),groups:[]};
+  if(sheets.length)newClient.sheets=sheets;
+  clients.push(newClient);
   saveClients();
   closeModal('modal-add-client');
   buildClientNav();
-  showOverview(document.getElementById('nav-overview'));
+  if(sheets.length)showClient(id,document.getElementById('nav-c-'+id));
+  else showOverview(document.getElementById('nav-overview'));
 }
 function sortClients(){showOverview(document.getElementById('nav-overview'));}
 
@@ -1014,11 +1358,16 @@ function openModal(id){
     document.getElementById('as-cid').value=KEYS.gscClientId||'';
     document.getElementById('as-csec').value=KEYS.gscClientSecret||'';
     document.getElementById('as-redir').value=window.location.href.split('?')[0];
+    document.getElementById('as-sheets-key').value=KEYS.sheetsKey||'';
     const params=new URLSearchParams(window.location.search);
     if(params.get('code')){
       document.getElementById('gsc-auth-msg').textContent='換取 Token 中...';
       exchangeGscCode(params.get('code'));
     }
+  }
+  if(id==='modal-add-client'){
+    draftSheets=[];
+    renderSheetRows('nc-sheets-list');
   }
   m.classList.add('open');
 }
@@ -1041,6 +1390,22 @@ async function testApi(){
   try{await serpQuery('seo test','example.com','example');msg.textContent='✅ 連線成功';msg.style.color='var(--green)';}
   catch(e){msg.textContent='❌ '+e.message;msg.style.color='var(--red)';}
   KEYS.serpKey=bk;
+}
+function saveSheetsApiCfg(){
+  KEYS.sheetsKey=document.getElementById('as-sheets-key').value.trim();
+  saveKeys();refreshStatusUI();
+  alert('Google Sheets API 設定已儲存！');
+}
+async function testSheetsApi(){
+  const k=document.getElementById('as-sheets-key').value.trim();
+  const msg=document.getElementById('sheets-test-msg');
+  if(!k){alert('請先填入 Key');return;}
+  msg.textContent='測試中...';msg.style.color='var(--text2)';
+  try{
+    // Google's public Sheets API quickstart sample spreadsheet, used purely to verify the key works
+    await sheetsApiCall(`https://sheets.googleapis.com/v4/spreadsheets/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms?key=${encodeURIComponent(k)}&fields=spreadsheetId`);
+    msg.textContent='✅ 連線成功';msg.style.color='var(--green)';
+  }catch(e){msg.textContent='❌ '+e.message;msg.style.color='var(--red)';}
 }
 function startGscOAuth(){
   const cid=document.getElementById('as-cid').value.trim();
@@ -1201,6 +1566,105 @@ function deleteKw(cid,gi,ki){
   saveClients();
   showClient(cid,null);
 }
+
+// ─── CLIENT SHARE LINK ───
+function b64EncodeUnicode(str){return btoa(unescape(encodeURIComponent(str)));}
+function b64DecodeUnicode(str){return decodeURIComponent(escape(atob(str)));}
+
+function openClientLinkModal(cid){
+  const c=clients.find(x=>x.id===cid);
+  if(!c)return;
+  document.getElementById('cl-link-out').value=generateClientLink(c);
+  document.getElementById('cl-copy-msg').textContent='';
+  openModal('modal-client-link');
+}
+function generateClientLink(c){
+  const payload={name:c.name,url:c.url,sheets:c.sheets||[],apiKey:KEYS.sheetsKey||''};
+  const encoded=b64EncodeUnicode(JSON.stringify(payload));
+  return `${window.location.href.split('?')[0]}?view=client&d=${encodeURIComponent(encoded)}`;
+}
+function copyClientLink(){
+  const val=document.getElementById('cl-link-out').value;
+  navigator.clipboard.writeText(val).then(()=>{
+    const msg=document.getElementById('cl-copy-msg');
+    if(msg){msg.textContent='已複製！';setTimeout(()=>{msg.textContent='';},2000);}
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=val;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('已複製連結！');
+  });
+}
+
+// ─── CLIENT VIEW (READ-ONLY, no login) ───
+let currentClientPayload=null;
+let cvClient=null;
+function decodeClientLinkParam(d){
+  try{
+    const payload=JSON.parse(b64DecodeUnicode(d));
+    return (payload&&typeof payload==='object')?payload:null;
+  }catch(e){return null;}
+}
+
+async function renderClientView(payload){
+  currentClientPayload=payload;
+  document.getElementById('cv-title').textContent=payload.name||'關鍵字排名';
+  document.getElementById('cv-sub').textContent=payload.url||'';
+  cvClient={id:0,name:payload.name,url:payload.url,sheets:payload.sheets||[],groups:[]};
+  const content=document.getElementById('cv-content');
+  if(!cvClient.sheets.length){
+    content.innerHTML='<div class="notice warn">此連結尚未連結任何試算表</div>';
+    return;
+  }
+  content.innerHTML='<div style="display:flex;align-items:center;gap:8px;color:var(--text3);font-size:13px;padding:20px 4px"><span class="spinner"></span> 讀取資料中...</div>';
+  try{
+    await refreshClientSheets(cvClient,payload.apiKey);
+  }catch(e){
+    content.innerHTML=`<div class="notice error">讀取失敗：${e.message==='NO_SHEETS_KEY'?'連結缺少 API 金鑰':e.message}</div>`;
+    return;
+  }
+  renderClientViewContent();
+}
+
+function renderClientViewContent(){
+  const c=cvClient;
+  const st=calcStats(c);
+  ACTIVE_GROUPS=c.groups;
+  document.getElementById('cv-content').innerHTML=`
+<div class="stat-grid">
+  <div class="stat-card"><div class="sc-label">關鍵字</div><div class="sc-value white">${st.total}</div></div>
+  <div class="stat-card"><div class="sc-label">前 10 名</div><div class="sc-value teal">${st.top10}</div></div>
+  <div class="stat-card"><div class="sc-label">排名上升</div><div class="sc-value green">${st.up}</div></div>
+  <div class="stat-card"><div class="sc-label">排名下降</div><div class="sc-value red">${st.down}</div></div>
+</div>
+<div id="cv-groups-wrap">
+${c.groups.map((g,gi)=>renderKwGroup(c,g,gi,true)).join('')}
+</div>`;
+}
+
+async function refreshClientViewData(){
+  if(!currentClientPayload)return;
+  const btn=document.getElementById('cv-refresh-btn');
+  if(btn)btn.innerHTML='<span class="spinner"></span> 讀取中...';
+  await renderClientView(currentClientPayload);
+  if(btn)btn.innerHTML='🔄 重新整理';
+}
+
+// ─── ROUTING ───
+// runs immediately at load: a client share link bypasses the login flow entirely and never
+// touches localStorage.clients — the link itself carries everything needed to render the page
+(function routeOnLoad(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('view')==='client'&&params.get('d')){
+    document.getElementById('login-page').classList.remove('active');
+    document.getElementById('login-page').style.display='none';
+    document.getElementById('client-view').style.display='block';
+    const payload=decodeClientLinkParam(params.get('d'));
+    if(payload)renderClientView(payload);
+    else document.getElementById('cv-content').innerHTML='<div class="notice error">連結無效或已損毀</div>';
+  }
+})();
 </script>
 </body>
 </html>
